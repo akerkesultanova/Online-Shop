@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using E_Shop.Data;
 using E_Shop.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace E_Shop.Controllers
 {
@@ -16,12 +17,57 @@ namespace E_Shop.Controllers
         {
             _db = db;
         }
-        public IActionResult Index()
+        /*public IActionResult Index()
         {
             IEnumerable<Category> objList = _db.Category;
             return View(objList);
-        }
+        }*/
+        public async Task<IActionResult> Index(
+           string sortOrder,
+           string currentFilter,
+           string searchString,
+           int? pageNumber)
+        {
+            ViewData["CurrentSort"] = sortOrder;
+            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            ViewData["DisplayOrderSortParm"] = sortOrder == "Date" ? "date_desc" : "Date";
 
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            var categories = from s in _db.Category
+                             select s;
+
+            ViewData["CurrentFilter"] = searchString;
+
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                categories = categories.Where(s => s.Name.Contains(searchString));
+            }
+            switch (sortOrder)
+            {
+                case "name_desc":
+                    categories = categories.OrderByDescending(s => s.Name);
+                    break;
+                case "Date":
+                    categories = categories.OrderBy(s => s.DisplayOrder);
+                    break;
+                case "date_desc":
+                    categories = categories.OrderByDescending(s => s.DisplayOrder);
+                    break;
+                default:
+                    categories = categories.OrderBy(s => s.Name);
+                    break;
+            }
+            int pageSize = 3;
+            return View(await PaginatedList<Category>.CreateAsync(categories.AsNoTracking(), pageNumber ?? 1, pageSize));
+        }
         //GET - CREATE
         public IActionResult Create()
         {

@@ -20,9 +20,44 @@ namespace E_Shop.Controllers
         }
 
         // GET: Roles
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+           string sortOrder,
+           string currentFilter,
+           string searchString,
+           int? pageNumber)
         {
-            return View(await _context.Role.ToListAsync());
+            ViewData["CurrentSort"] = sortOrder;
+            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            var roles = from s in _context.Role
+                        select s;
+
+            ViewData["CurrentFilter"] = searchString;
+
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                roles = roles.Where(s => s.Name.Contains(searchString));
+            }
+            switch (sortOrder)
+            {
+                case "name_desc":
+                    roles = roles.OrderByDescending(s => s.Name);
+                    break;
+                default:
+                    roles = roles.OrderBy(s => s.Name);
+                    break;
+            }
+            int pageSize = 3;
+            return View(await PaginatedList<Role>.CreateAsync(roles.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
         // GET: Roles/Details/5

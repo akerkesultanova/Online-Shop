@@ -20,7 +20,7 @@ namespace E_Shop.Controllers
         }
 
         // GET: Users
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string sortOrder)
         {
             var applicationDbContext = _context.User.Include(u => u.Role);
             return View(await applicationDbContext.ToListAsync());

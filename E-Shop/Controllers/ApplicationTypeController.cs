@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using E_Shop.Data;
 using E_Shop.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace E_Shop.Controllers
 {
@@ -16,10 +17,50 @@ namespace E_Shop.Controllers
         {
             _db = db;
         }
-        public IActionResult Index()
+        /*public IActionResult Index()
         {
             IEnumerable<ApplicationType> objList = _db.ApplicationType;
             return View(objList);
+        }*/
+        // GET: ApplicationType
+        public async Task<IActionResult> Index(
+             string sortOrder,
+             string currentFilter,
+             string searchString,
+             int? pageNumber)
+        {
+            ViewData["CurrentSort"] = sortOrder;
+            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            var seazon = from s in _db.ApplicationType
+                         select s;
+
+            ViewData["CurrentFilter"] = searchString;
+
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                seazon = seazon.Where(s => s.Name.Contains(searchString));
+            }
+            switch (sortOrder)
+            {
+                case "name_desc":
+                    seazon = seazon.OrderByDescending(s => s.Name);
+                    break;
+                default:
+                    seazon = seazon.OrderBy(s => s.Name);
+                    break;
+            }
+            int pageSize = 3;
+            return View(await PaginatedList<ApplicationType>.CreateAsync(seazon.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
         //GET - CREATE
